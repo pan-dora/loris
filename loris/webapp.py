@@ -56,7 +56,7 @@ def get_debug_config(debug_jp2_transformer):
     config['img.ImageCache']['cache_dp'] = '/tmp/loris/cache/img'
     config['img_info.InfoCache']['cache_dp'] = '/tmp/loris/cache/info'
     config['resolver']['impl'] = 'loris.resolver.SimpleFSResolver'
-    config['resolver']['src_img_root'] = path.join(project_dp,'tests','img')
+ #   config['resolver']['src_img_root'] = path.join(project_dp,'tests','img')
     if debug_jp2_transformer == 'opj':
         from transforms import OPJ_JP2Transformer
         opj_decompress = OPJ_JP2Transformer.local_opj_decompress_path()
