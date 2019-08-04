@@ -3,6 +3,7 @@ Install on Red Hat (CentOS) 7
 
 Everything here needs to be done as root, so either open a root shell now or
 precede all instructions here with `sudo`.
+You should also, if you are running with SELinux, begin this process by turning it off (```setenforce=0```) and end by turning it back on (```setenforce=1```). Doing this, as with sudo, makes installation instructions tricky -- it can change access between different parts of the system in unexpected ways.
 
 Install Dependencies
 --------------------
@@ -12,7 +13,7 @@ Install Dependencies
  * bzip2 for library installed via Loris' `python setup.py install`
 
 ```
-yum install git wget mod_wsgi python-devel bzip2
+yum install git wget mod_wsgi python-devel bzip2 gcc
 ```
 
 Install pip
@@ -57,22 +58,64 @@ Install Loris
 -------------
 
 ```
-useradd -d /var/www/loris -s /sbin/false loris
-git clone https://github.com/pulibrary/loris.git
+mkdir /var/www/loris2
+useradd -d /var/www/loris2 -s /sbin/false loris
+git clone https://github.com/loris-imageserver/loris.git
 cd loris
+pip install -r requirements.txt --ignore-installed
 
-# (configure as necessary)
+# (configure as necessary in /opt/loris/etc/loris.conf)
 
 python setup.py install
 ```
 
-At this point you'll want to go through everything else suggested in the main
-install script: [configuring Apache](apache.md) and whatnot.
+Caching & logging folders
+-----------------------
 
-After apache is configured, you can test by adding an image to `/usr/local/share/images` and visit a URL like:
+The install script does not seem to create these folders which the default config file takes as necessities for logging and caching -- remember to give ownership to Loris.
 
+```
+mkdir /var/log/loris2
+chown loris /var/log/loris2
+mkdir /var/cache/loris
+chown loris /var/cache/loris
+```
+
+Configure Apache
+-------------
+
+The Apache instructions here do **not** work well with CentOS7 SELinux boxes: [configuring Apache](apache.md).
+
+
+1. Create a file loris.conf in /etc/httpd/conf.d/
+```
+    <virtualhost *:80> 
+        ServerName [SERVER IP HERE]
+
+        WSGIDaemonProcess loris user=loris group=loris processes=10 threads=15 maximum-requests=10000
+        WSGIScriptAlias /loris /var/www/loris2/loris.wsgi
+        <directory /var/www/loris2> 
+            WSGIProcessGroup loris 
+            WSGIApplicationGroup %{GLOBAL} 
+            WSGIScriptReloading On 
+        Require all granted 
+        </directory> 
+    </virtualhost>
+ ```
+ 
+ 2. Create a file loris.wsgi in /var/www/loris2/
+ ```
+#!/usr/bin/env python
+
+from loris.webapp import create_app
+application = create_app(config_file_path='/opt/loris/etc/loris2.conf')
+```
+
+After apache is configured, start it up:
+`httpd -k start`
+
+You can test by adding an image to `/usr/local/share/images` and visit a URL like:
 `http://{YOUR SERVER NAME}/loris/{YOUR TEST FILE NAME}/full/full/0/default.jpg`
-
 
 
 SELinux module
