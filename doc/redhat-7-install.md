@@ -88,8 +88,10 @@ The Apache instructions here do **not** work well with CentOS7 SELinux boxes: [c
 
 
 1. Create a file loris.conf in /etc/httpd/conf.d/
+Without turning on AllowEncodedSlashes, IIIF won't be able to consistently handle requests for assets in subdirectories.
 ```
     <virtualhost *:80> 
+        AllowEncodedSlashes On
         ServerName [SERVER IP HERE]
 
         WSGIDaemonProcess loris user=loris group=loris processes=10 threads=15 maximum-requests=10000
